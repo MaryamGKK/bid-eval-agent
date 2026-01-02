@@ -59,7 +59,7 @@ DOCUMENTS_PER_COMPANY = 5
 # RAG Settings
 RAG_CONFIG = {
     "vector_store": "ChromaDB",
-    "embedding_model": "all-MiniLM-L6-v2",
+    "embedding_model": "default",  # Future: "all-MiniLM-L6-v2" for better semantic search
     "documents_retrieved_per_company": DOCUMENTS_PER_COMPANY,
     "retrieval_confidence_threshold": RETRIEVAL_CONFIDENCE_THRESHOLD
 }

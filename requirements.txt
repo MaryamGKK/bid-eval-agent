@@ -13,6 +13,8 @@ pandas
 opentelemetry-api
 opentelemetry-sdk
 
-# Vector Database & Embeddings (Historical RAG)
+# Vector Database (Historical RAG)
 chromadb
-sentence-transformers
+
+# Future: Add for better semantic search
+# sentence-transformers

@@ -38,38 +38,24 @@ class HistoricalRAG:
         
         self.client = chromadb.PersistentClient(path=persist_directory)
         
-        # Use sentence-transformers for better semantic search
-        # Load from local path if available (faster startup)
-        import os
-        local_model_path = os.path.join(os.path.dirname(__file__), "..", "models", "all-MiniLM-L6-v2")
-        
-        from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-        if os.path.exists(local_model_path):
-            self._embedding_fn = SentenceTransformerEmbeddingFunction(
-                model_name=local_model_path
-            )
-        else:
-            self._embedding_fn = SentenceTransformerEmbeddingFunction(
-                model_name="all-MiniLM-L6-v2"
-            )
+        # Use default embedding (fast, no model loading)
+        # Future: Switch to SentenceTransformerEmbeddingFunction for better semantic search
+        self._embedding_fn = None  # ChromaDB uses default when None
         
         # Collections for different data types
         self.evaluations = self.client.get_or_create_collection(
             name="evaluations",
-            metadata={"description": "Past bid evaluation results"},
-            embedding_function=self._embedding_fn
+            metadata={"description": "Past bid evaluation results"}
         )
         
         self.company_profiles = self.client.get_or_create_collection(
             name="company_profiles",
-            metadata={"description": "Company performance profiles"},
-            embedding_function=self._embedding_fn
+            metadata={"description": "Company performance profiles"}
         )
         
         self.bid_patterns = self.client.get_or_create_collection(
             name="bid_patterns",
-            metadata={"description": "Bid patterns and benchmarks"},
-            embedding_function=self._embedding_fn
+            metadata={"description": "Bid patterns and benchmarks"}
         )
     
     def _generate_id(self, content: str) -> str:
