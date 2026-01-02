@@ -990,105 +990,70 @@ elif page == "Observability":
     trace_tab, runs_tab, metrics_tab, graph_tab, raw_tab = st.tabs(["Trace Tree", "All Runs", "Metrics", "Graph", "Raw"])
     
     with trace_tab:
-        st.markdown('<p class="section-header">Run Trace (LangSmith Style)</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">Run Trace</p>', unsafe_allow_html=True)
         
         run_tree = controller.get_run_tree()
         
         if runs:
             max_duration = max([r.get("latency_ms", 0) or 0 for r in runs] + [1])
             
-            def get_run_icon(run_type: str) -> tuple:
-                icons = {
-                    "chain": ("⛓️", "chain"),
-                    "llm": ("🤖", "llm"),
-                    "tool": ("🔧", "tool"),
-                    "retriever": ("🔍", "retriever"),
-                    "parser": ("📋", "parser"),
-                    "prompt": ("💬", "prompt"),
-                    "embedding": ("📊", "retriever")
-                }
-                return icons.get(run_type, ("•", "chain"))
-            
-            def get_duration_color(duration: float, max_dur: float) -> str:
-                if not duration or not max_dur:
-                    return "#3b82f6"
-                ratio = duration / max_dur
-                if ratio > 0.7:
-                    return "#ef4444"  # Red for slow
-                elif ratio > 0.4:
-                    return "#f59e0b"  # Amber for medium
-                return "#22c55e"  # Green for fast
+            # Run type icons
+            RUN_ICONS = {
+                "chain": "⛓️", "llm": "🤖", "tool": "🔧", 
+                "retriever": "🔍", "parser": "📋", "prompt": "💬", "embedding": "📊"
+            }
             
             def render_run(run: dict, depth: int = 0):
-                """Render a single run with indentation."""
+                """Render a single run."""
                 run_type = run.get("run_type", "chain")
-                icon, icon_class = get_run_icon(run_type)
+                icon = RUN_ICONS.get(run_type, "•")
                 duration = run.get("latency_ms") or 0
-                duration_pct = min((duration / max_duration) * 100, 100) if max_duration > 0 else 0
-                duration_color = get_duration_color(duration, max_duration)
                 status = run.get("status", "success")
+                name = run.get("name", "unknown")
+                run_id = run.get("id", "N/A")[:8]
                 
-                # Token usage display
-                token_html = ""
+                # Status indicator
+                status_icon = "✅" if status == "success" else "❌"
+                
+                # Token info
+                token_str = ""
                 if run.get("token_usage"):
-                    tokens = run["token_usage"]
-                    token_html = f"""
-                    <span class="token-badge">
-                        ◈ {tokens.get('total_tokens', 0):,} tokens
-                    </span>
-                    """
+                    tokens = run["token_usage"].get("total_tokens", 0)
+                    token_str = f" | 🔤 {tokens:,} tokens"
                 
-                indent_px = depth * 24
+                # Create expander with structured info
+                indent = "  " * depth
+                expander_label = f"{indent}{icon} **{name}** `{run_type.upper()}` — {duration:.0f}ms {status_icon}{token_str}"
                 
-                with st.expander(f"{'│  ' * depth}{run.get('name', 'unknown')}", expanded=depth == 0):
-                    # Header
-                    st.markdown(f"""
-                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                        <div class="run-icon run-icon-{icon_class}">{icon}</div>
-                        <div style="flex-grow: 1;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="color: #fafafa; font-weight: 600;">{run.get('name', 'unknown')}</span>
-                                <span class="run-type-badge">{run_type.upper()}</span>
-                                {token_html}
-                            </div>
-                            <div style="color: #71717a; font-size: 0.75rem; margin-top: 0.25rem;">
-                                ID: {run.get('id', 'N/A')[:12]}...
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div class="duration-bar-container">
-                                    <div class="duration-bar" style="width: {duration_pct}%; background: {duration_color};"></div>
-                                </div>
-                                <span style="color: #a1a1aa; font-size: 0.8rem; font-family: monospace; min-width: 60px;">
-                                    {duration:.0f}ms
-                                </span>
-                            </div>
-                            <span style="color: {'#22c55e' if status == 'success' else '#ef4444'}; font-size: 0.7rem;">
-                                {status.upper()}
-                            </span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                with st.expander(expander_label, expanded=(depth == 0)):
+                    # Info row
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.caption(f"Run ID: `{run_id}...`")
+                    with col2:
+                        st.caption(f"Duration: **{duration:.0f}ms**")
+                    with col3:
+                        if run.get("model"):
+                            st.caption(f"Model: `{run['model']}`")
                     
-                    # Input/Output tabs
-                    in_tab, out_tab, meta_tab = st.tabs(["Input", "Output", "Metadata"])
+                    # Tabs for details
+                    tab1, tab2, tab3 = st.tabs(["📥 Input", "📤 Output", "ℹ️ Meta"])
                     
-                    with in_tab:
+                    with tab1:
                         inputs = run.get("inputs", {})
                         if inputs:
                             st.json(inputs)
                         else:
-                            st.markdown("*No input data*")
+                            st.caption("No input data")
                     
-                    with out_tab:
+                    with tab2:
                         outputs = run.get("outputs")
                         if outputs:
                             st.json(outputs)
                         else:
-                            st.markdown("*No output data*")
+                            st.caption("No output data")
                     
-                    with meta_tab:
+                    with tab3:
                         meta = {
                             "id": run.get("id"),
                             "run_type": run_type,
@@ -1097,7 +1062,6 @@ elif page == "Observability":
                             "end_time": run.get("end_time"),
                             "latency_ms": duration,
                             "parent_run_id": run.get("parent_run_id"),
-                            "child_runs": len(run.get("child_run_ids", [])),
                             "tags": run.get("tags", [])
                         }
                         if run.get("model"):
@@ -1106,7 +1070,6 @@ elif page == "Observability":
                             meta["token_usage"] = run["token_usage"]
                         if run.get("error"):
                             meta["error"] = run["error"]
-                            meta["error_type"] = run.get("error_type")
                         st.json(meta)
                 
                 # Render children
@@ -1120,23 +1083,28 @@ elif page == "Observability":
                     if root_run:
                         render_run(root_run)
             else:
-                # Fallback to flat list
                 for run in runs:
                     render_run(run)
         else:
-            st.info("No runs recorded yet. Run an evaluation to see traces.")
+            st.info("No runs recorded. Run an evaluation to see traces.")
     
     with runs_tab:
         st.markdown('<p class="section-header">All Runs (Flat View)</p>', unsafe_allow_html=True)
+        
+        # Run type icons
+        TYPE_ICONS = {
+            "chain": "⛓️", "llm": "🤖", "tool": "🔧", 
+            "retriever": "🔍", "parser": "📋", "prompt": "💬", "embedding": "📊"
+        }
         
         if runs:
             # Summary by type
             runs_by_type = summary.get("runs_by_type", {})
             if runs_by_type:
-                cols = st.columns(len(runs_by_type))
+                cols = st.columns(min(len(runs_by_type), 5))
                 for i, (run_type, count) in enumerate(runs_by_type.items()):
-                    with cols[i]:
-                        icon, _ = get_run_icon(run_type)
+                    with cols[i % 5]:
+                        icon = TYPE_ICONS.get(run_type, "•")
                         st.metric(f"{icon} {run_type.title()}", count)
             
             st.markdown("---")
@@ -1148,7 +1116,7 @@ elif page == "Observability":
                     "Name": run.get("name", ""),
                     "Type": run.get("run_type", "").upper(),
                     "Status": "✅" if run.get("status") == "success" else "❌",
-                    "Latency (ms)": run.get("latency_ms") or 0,
+                    "Latency (ms)": round(run.get("latency_ms") or 0),
                     "Tokens": run.get("token_usage", {}).get("total_tokens", 0) if run.get("token_usage") else 0
                 })
             
