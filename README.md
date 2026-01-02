@@ -150,6 +150,22 @@ streamlit run app.py
 | `build_result` | Assemble output |
 | `persist_result` | Save to SQLite + ChromaDB |
 
+## Architecture Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| LangGraph orchestration | State machine enables conditional routing, typed state flow, debuggable visualization |
+| Dual search (Tavily + SerpAPI) | Redundancy; different indexes improve coverage; dual success increases confidence |
+| Groq GPT-OSS-120B | 120B params for reasoning; 500 tok/s; $0.15/1M tokens; low temp for formal output |
+| No fallbacks | Fail fast ensures data integrity; silent failures produce wrong recommendations |
+| SQLite + ChromaDB split | SQLite for structured data; ChromaDB for semantic search |
+| OpenTelemetry | Industry standard; compatible with Jaeger/Zipkin/Datadog |
+| Streamlit | Rapid prototyping; Python-only; built-in state management |
+| Risk-prioritized weights | Risk 25% + Scope 25% > Cost 20% per project requirement |
+| ThreadPoolExecutor | I/O bound APIs benefit from threads; 3x faster than sequential |
+| Dataclasses over Pydantic | Lighter weight; no extra dependency; sufficient for POC |
+| Optional input fields | Accepts minimal JSON; reduces friction for incomplete data |
+
 ## API Rate Limits
 
 | Service | Limit |
@@ -158,6 +174,3 @@ streamlit run app.py
 | Tavily | Plan dependent |
 | SerpAPI | 100/month (free) |
 
----
-
-Internal use only.
