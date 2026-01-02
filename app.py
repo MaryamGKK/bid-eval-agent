@@ -11,10 +11,18 @@ from controller import Controller
 # Pre-load embedding model at startup (cached across reruns)
 @st.cache_resource(show_spinner="Loading AI models...")
 def load_embedding_model():
-    """Pre-load sentence-transformers model to avoid cold start delays."""
+    """Pre-load sentence-transformers model from local path."""
     try:
         from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer('all-MiniLM-L6-v2')
+        import os
+        
+        # Try local model first (faster, no download)
+        local_path = os.path.join(os.path.dirname(__file__), "models", "all-MiniLM-L6-v2")
+        if os.path.exists(local_path):
+            model = SentenceTransformer(local_path)
+        else:
+            # Fallback to download if local not found
+            model = SentenceTransformer('all-MiniLM-L6-v2')
         return model
     except Exception:
         return None

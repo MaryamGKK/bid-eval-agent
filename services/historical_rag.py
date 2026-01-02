@@ -39,11 +39,19 @@ class HistoricalRAG:
         self.client = chromadb.PersistentClient(path=persist_directory)
         
         # Use sentence-transformers for better semantic search
-        # Model is cached after first load
+        # Load from local path if available (faster startup)
+        import os
+        local_model_path = os.path.join(os.path.dirname(__file__), "..", "models", "all-MiniLM-L6-v2")
+        
         from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-        self._embedding_fn = SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"  # Fast & good quality (22M params)
-        )
+        if os.path.exists(local_model_path):
+            self._embedding_fn = SentenceTransformerEmbeddingFunction(
+                model_name=local_model_path
+            )
+        else:
+            self._embedding_fn = SentenceTransformerEmbeddingFunction(
+                model_name="all-MiniLM-L6-v2"
+            )
         
         # Collections for different data types
         self.evaluations = self.client.get_or_create_collection(
