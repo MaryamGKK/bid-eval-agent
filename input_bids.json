@@ -1,0 +1,136 @@
+[
+  {
+    "bid_id": "b1",
+    "company_name": "Tutor Perini",
+    "cost": {
+      "total_usd": 1180000,
+      "currency": "USD",
+      "cost_breakdown": {
+        "labor": 520000,
+        "materials": 430000,
+        "contingency": 230000
+      }
+    },
+    "timeline": {
+      "estimated_months": 6,
+      "confidence_level": 0.85,
+      "critical_path_risk": "Medium"
+    },
+    "scope_coverage": {
+      "included": ["Electrical", "HVAC", "Interior"],
+      "excluded": [],
+      "subcontracted": []
+    },
+    "assumptions": [
+      "Parallel execution of HVAC and electrical work",
+      "No major permitting delays"
+    ],
+    "dependencies": [
+      "City permit approval within 30 days"
+    ],
+    "prior_similar_projects_count": 42,
+    "delivery_history": {
+      "on_time_percentage": 0.91,
+      "on_budget_percentage": 0.88,
+      "known_delays": []
+    },
+    "legal_and_compliance": {
+      "open_litigation": false,
+      "safety_violations_last_5_years": 1
+    },
+    "bid_metadata": {
+      "submission_channel": "online",
+      "submission_timestamp": "2026-02-12T14:22:00Z",
+      "bid_revision": 2
+    }
+  },
+  {
+    "bid_id": "b2",
+    "company_name": "BESIX",
+    "cost": {
+      "total_usd": 1250000,
+      "currency": "USD",
+      "cost_breakdown": {
+        "labor": 480000,
+        "materials": 510000,
+        "contingency": 260000
+      }
+    },
+    "timeline": {
+      "estimated_months": 5,
+      "confidence_level": 0.62,
+      "critical_path_risk": "High"
+    },
+    "scope_coverage": {
+      "included": ["HVAC", "Interior"],
+      "excluded": ["Electrical"],
+      "subcontracted": ["Electrical"]
+    },
+    "assumptions": [
+      "Electrical work outsourced to local partner"
+    ],
+    "dependencies": [
+      "Availability of approved local subcontractor"
+    ],
+    "prior_similar_projects_count": 18,
+    "delivery_history": {
+      "on_time_percentage": 0.76,
+      "on_budget_percentage": 0.81,
+      "known_delays": ["Supply chain disruption (2024)"]
+    },
+    "legal_and_compliance": {
+      "open_litigation": false,
+      "safety_violations_last_5_years": 0
+    },
+    "bid_metadata": {
+      "submission_channel": "email",
+      "submission_timestamp": "2026-02-11T09:05:00Z",
+      "bid_revision": 1
+    }
+  },
+  {
+    "bid_id": "b3",
+    "company_name": "Nakano Corporation",
+    "cost": {
+      "total_usd": 1050000,
+      "currency": "USD",
+      "cost_breakdown": {
+        "labor": 390000,
+        "materials": 410000,
+        "contingency": 250000
+      }
+    },
+    "timeline": {
+      "estimated_months": 7,
+      "confidence_level": 0.55,
+      "critical_path_risk": "High"
+    },
+    "scope_coverage": {
+      "included": ["Interior"],
+      "excluded": ["HVAC", "Electrical"],
+      "subcontracted": []
+    },
+    "assumptions": [
+      "Interior-only engagement",
+      "Client manages MEP separately"
+    ],
+    "dependencies": [
+      "Coordination with third-party MEP contractors"
+    ],
+    "prior_similar_projects_count": 9,
+    "delivery_history": {
+      "on_time_percentage": 0.69,
+      "on_budget_percentage": 0.73,
+      "known_delays": ["Permit approval delays (Japan-based projects)"]
+    },
+    "legal_and_compliance": {
+      "open_litigation": false,
+      "safety_violations_last_5_years": 2
+    },
+    "bid_metadata": {
+      "submission_channel": "online_portal",
+      "submission_timestamp": "2026-02-10T18:40:00Z",
+      "bid_revision": 1
+    }
+  }
+]

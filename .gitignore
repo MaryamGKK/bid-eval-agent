@@ -1,0 +1,23 @@
+# Environment
+.env
+venv/
+venv311/
+__pycache__/
+*.pyc
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Database (ephemeral on cloud)
+*.db
+chroma_db/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
