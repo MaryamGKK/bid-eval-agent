@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Professional CSS
+# Professional CSS with skeleton loading
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
@@ -120,8 +120,119 @@ st.markdown("""
     .stButton > button:hover {
         background: #4f46e5;
     }
+    
+    /* Skeleton Loading Animation */
+    @keyframes skeleton-pulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 0.7; }
+        100% { opacity: 0.4; }
+    }
+    
+    .skeleton {
+        background: linear-gradient(90deg, #1e1e2e 0%, #2a2a3e 50%, #1e1e2e 100%);
+        background-size: 200% 100%;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+        border-radius: 4px;
+    }
+    
+    .skeleton-text {
+        height: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .skeleton-text-sm {
+        height: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .skeleton-title {
+        height: 2rem;
+        width: 60%;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-card {
+        background: #12121a;
+        border: 1px solid #1e1e2e;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-metric {
+        height: 3rem;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .skeleton-banner {
+        background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+        border: 1px solid #2a2a3e;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+
+def show_skeleton_card():
+    """Display a skeleton loading card."""
+    st.markdown("""
+    <div class="skeleton-card">
+        <div class="skeleton skeleton-text" style="width: 40%;"></div>
+        <div class="skeleton skeleton-metric"></div>
+        <div class="skeleton skeleton-text-sm" style="width: 80%;"></div>
+        <div class="skeleton skeleton-text-sm" style="width: 60%;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def show_skeleton_banner():
+    """Display a skeleton loading banner."""
+    st.markdown("""
+    <div class="skeleton-banner">
+        <div class="skeleton skeleton-text-sm" style="width: 30%; margin: 0 auto 0.5rem auto;"></div>
+        <div class="skeleton skeleton-title" style="margin: 0 auto 0.5rem auto;"></div>
+        <div class="skeleton skeleton-text" style="width: 40%; margin: 0 auto;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def show_skeleton_table(rows=3):
+    """Display a skeleton loading table."""
+    for _ in range(rows):
+        cols = st.columns(5)
+        for col in cols:
+            with col:
+                st.markdown('<div class="skeleton skeleton-metric" style="height: 2rem;"></div>', unsafe_allow_html=True)
+
+# Initialize loading state
+if "app_loaded" not in st.session_state:
+    st.session_state["app_loaded"] = False
+
+# Show initial loading skeleton while controller initializes
+if not st.session_state["app_loaded"]:
+    with st.sidebar:
+        st.markdown("### Bid Evaluation System")
+        st.markdown("---")
+        st.markdown('<div class="skeleton skeleton-text" style="width: 80%; height: 2rem;"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="skeleton skeleton-text" style="width: 60%; height: 2rem; margin-top: 0.5rem;"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="skeleton skeleton-text" style="width: 70%; height: 2rem; margin-top: 0.5rem;"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="skeleton skeleton-text" style="width: 50%; height: 2rem; margin-top: 0.5rem;"></div>', unsafe_allow_html=True)
+    
+    # Main content skeleton
+    st.markdown('<div class="skeleton skeleton-title" style="width: 30%; height: 2.5rem; margin-bottom: 2rem;"></div>', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        show_skeleton_card()
+    with col2:
+        show_skeleton_card()
+    with col3:
+        show_skeleton_card()
+    show_skeleton_banner()
+    show_skeleton_table(4)
 
 # Initialize controller
 @st.cache_resource
@@ -129,6 +240,11 @@ def get_controller():
     return Controller()
 
 controller = get_controller()
+
+# Mark app as loaded
+if not st.session_state["app_loaded"]:
+    st.session_state["app_loaded"] = True
+    st.rerun()
 
 # Sidebar navigation
 st.sidebar.markdown("### Bid Evaluation System")
@@ -215,17 +331,37 @@ if page == "Upload":
                             st.success("Cached result loaded. Navigate to Results.")
                     with col2:
                         if st.button("Run Fresh Evaluation", type="primary", use_container_width=True):
-                            with st.spinner("Processing bid evaluation..."):
-                                result = controller.evaluate(bids, use_cached_result=False)
-                                st.session_state["result"] = result.to_dict()
-                                st.session_state["bids"] = data
+                            # Show skeleton loading
+                            loading_placeholder = st.empty()
+                            with loading_placeholder.container():
+                                st.markdown('<p class="section-header">Processing Evaluation...</p>', unsafe_allow_html=True)
+                                show_skeleton_banner()
+                                cols = st.columns(3)
+                                for col in cols:
+                                    with col:
+                                        show_skeleton_card()
+                            
+                            result = controller.evaluate(bids, use_cached_result=False)
+                            st.session_state["result"] = result.to_dict()
+                            st.session_state["bids"] = data
+                            loading_placeholder.empty()
                             st.success("Evaluation complete. Navigate to Results.")
                 else:
                     if st.button("Run Evaluation", type="primary", use_container_width=True):
-                        with st.spinner("Processing bid evaluation..."):
-                            result = controller.evaluate(bids)
-                            st.session_state["result"] = result.to_dict()
-                            st.session_state["bids"] = data
+                        # Show skeleton loading
+                        loading_placeholder = st.empty()
+                        with loading_placeholder.container():
+                            st.markdown('<p class="section-header">Processing Evaluation...</p>', unsafe_allow_html=True)
+                            show_skeleton_banner()
+                            cols = st.columns(3)
+                            for col in cols:
+                                with col:
+                                    show_skeleton_card()
+                        
+                        result = controller.evaluate(bids)
+                        st.session_state["result"] = result.to_dict()
+                        st.session_state["bids"] = data
+                        loading_placeholder.empty()
                         st.success("Evaluation complete. Navigate to Results.")
                     
             except json.JSONDecodeError as e:
@@ -264,6 +400,15 @@ elif page == "Results":
     st.markdown('<h1 class="main-header">Evaluation Results</h1>', unsafe_allow_html=True)
     
     if "result" not in st.session_state:
+        # Show skeleton placeholder
+        show_skeleton_banner()
+        st.markdown('<p class="section-header">Awaiting Evaluation</p>', unsafe_allow_html=True)
+        cols = st.columns(4)
+        for col in cols:
+            with col:
+                st.markdown('<div class="skeleton skeleton-metric" style="height: 4rem;"></div>', unsafe_allow_html=True)
+        st.markdown("---")
+        show_skeleton_table(3)
         st.info("No evaluation data available. Please upload and evaluate bids first.")
         st.stop()
     
@@ -411,9 +556,23 @@ elif page == "Results":
 elif page == "History":
     st.markdown('<h1 class="main-header">Evaluation History</h1>', unsafe_allow_html=True)
     
+    # Show skeleton while loading
+    loading_container = st.empty()
+    with loading_container.container():
+        cols = st.columns(4)
+        for col in cols:
+            with col:
+                st.markdown('<div class="skeleton skeleton-metric"></div>', unsafe_allow_html=True)
+        st.markdown("---")
+        show_skeleton_card()
+        show_skeleton_card()
+    
     # Get history
     history = controller.get_evaluation_history(limit=20)
     stats = controller.get_stats()
+    
+    # Clear skeleton
+    loading_container.empty()
     
     # Stats overview
     col1, col2, col3, col4 = st.columns(4)
@@ -735,6 +894,22 @@ elif page == "Observability":
     """, unsafe_allow_html=True)
     
     if "result" not in st.session_state:
+        # Show skeleton placeholder for observability
+        st.markdown("""
+        <div class="trace-header">
+            <div class="skeleton skeleton-text" style="width: 40%; height: 1.5rem;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 60%; margin-top: 0.5rem;"></div>
+            <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        show_skeleton_card()
+        show_skeleton_card()
+        show_skeleton_card()
         st.info("No evaluation data available. Run an evaluation first.")
         st.stop()
     
