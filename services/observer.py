@@ -13,7 +13,7 @@ from enum import Enum
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.trace import Status, StatusCode, SpanKind
 
@@ -28,8 +28,10 @@ resource = Resource.create({
     "deployment.environment": "development"
 })
 provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(ConsoleSpanExporter())
-provider.add_span_processor(processor)
+# Traces stored in-memory only (no console output)
+# For production: add OTLP exporter to send to observability backend
+# processor = BatchSpanProcessor(OTLPSpanExporter())
+# provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer("bid-eval-agent", "1.0.0")
 
