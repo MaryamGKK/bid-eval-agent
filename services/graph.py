@@ -509,11 +509,33 @@ def persist_result_node(state: BidEvaluationState) -> BidEvaluationState:
         
         result_dict = state["result"].to_dict()
         
+        # Convert runs to legacy trace format for storage
+        from datetime import datetime
+        runs = observer.get_runs()
+        legacy_traces = []
+        for r in runs:
+            # Ensure required fields have valid values
+            timestamp = r.get("start_time") or datetime.now().isoformat()
+            event_type = r.get("run_type") or "chain"
+            node_name = r.get("name") or "unknown"
+            
+            legacy_traces.append({
+                "trace_id": r.get("trace_id"),
+                "span_id": r.get("id"),
+                "parent_span_id": r.get("parent_run_id"),
+                "type": event_type,
+                "node": node_name,
+                "status": r.get("status", "success"),
+                "duration_ms": r.get("latency_ms"),
+                "data": r.get("inputs", {}),
+                "timestamp": timestamp
+            })
+        
         # Save evaluation
         eval_id = memory.save_evaluation(
             input_data=state["bids"],
             result=result_dict,
-            traces=observer.get_runs()
+            traces=legacy_traces
         )
         
         # Cache company insights

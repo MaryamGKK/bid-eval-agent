@@ -177,36 +177,91 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def show_skeleton_card():
-    """Display a skeleton loading card."""
-    st.markdown("""
-    <div class="skeleton-card">
-        <div class="skeleton skeleton-text" style="width: 40%;"></div>
-        <div class="skeleton skeleton-metric"></div>
-        <div class="skeleton skeleton-text-sm" style="width: 80%;"></div>
-        <div class="skeleton skeleton-text-sm" style="width: 60%;"></div>
-    </div>
-    """, unsafe_allow_html=True)
+def show_skeleton_card(variant: str = "default"):
+    """Display a skeleton loading card with variants."""
+    if variant == "metric":
+        st.markdown("""
+        <div class="skeleton-card" style="height: 100px;">
+            <div class="skeleton skeleton-text-sm" style="width: 60%;"></div>
+            <div class="skeleton skeleton-metric" style="height: 2.5rem; margin-top: 0.5rem;"></div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif variant == "bid":
+        st.markdown("""
+        <div class="skeleton-card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <div class="skeleton skeleton-text" style="width: 35%;"></div>
+                <div class="skeleton skeleton-text" style="width: 20%;"></div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="skeleton skeleton-metric" style="width: 30%; height: 3rem;"></div>
+                <div class="skeleton skeleton-metric" style="width: 30%; height: 3rem;"></div>
+                <div class="skeleton skeleton-metric" style="width: 30%; height: 3rem;"></div>
+            </div>
+            <div class="skeleton skeleton-text-sm" style="width: 80%; margin-top: 1rem;"></div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif variant == "trace":
+        st.markdown("""
+        <div class="skeleton-card">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="skeleton" style="width: 28px; height: 28px; border-radius: 6px;"></div>
+                <div class="skeleton skeleton-text" style="width: 40%; flex-grow: 1;"></div>
+                <div class="skeleton skeleton-text" style="width: 60px;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-text" style="width: 40%;"></div>
+            <div class="skeleton skeleton-metric"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 80%;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 60%;"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-def show_skeleton_banner():
+def show_skeleton_banner(variant: str = "winner"):
     """Display a skeleton loading banner."""
-    st.markdown("""
-    <div class="skeleton-banner">
-        <div class="skeleton skeleton-text-sm" style="width: 30%; margin: 0 auto 0.5rem auto;"></div>
-        <div class="skeleton skeleton-title" style="margin: 0 auto 0.5rem auto;"></div>
-        <div class="skeleton skeleton-text" style="width: 40%; margin: 0 auto;"></div>
-    </div>
-    """, unsafe_allow_html=True)
+    if variant == "trace":
+        st.markdown("""
+        <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div class="skeleton skeleton-text" style="width: 35%; height: 1.5rem;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 50%; margin-top: 0.5rem;"></div>
+            <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="skeleton-banner">
+            <div class="skeleton skeleton-text-sm" style="width: 30%; margin: 0 auto 0.5rem auto;"></div>
+            <div class="skeleton skeleton-title" style="margin: 0 auto 0.5rem auto;"></div>
+            <div class="skeleton skeleton-text" style="width: 40%; margin: 0 auto;"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-def show_skeleton_table(rows=3):
+def show_skeleton_table(rows: int = 3, cols: int = 5):
     """Display a skeleton loading table."""
     for _ in range(rows):
-        cols = st.columns(5)
-        for col in cols:
+        columns = st.columns(cols)
+        for col in columns:
             with col:
                 st.markdown('<div class="skeleton skeleton-metric" style="height: 2rem;"></div>', unsafe_allow_html=True)
+
+
+def show_skeleton_stats_row():
+    """Display skeleton for stats row."""
+    cols = st.columns(4)
+    for col in cols:
+        with col:
+            show_skeleton_card("metric")
 
 # Initialize loading state
 if "app_loaded" not in st.session_state:
@@ -217,22 +272,33 @@ if not st.session_state["app_loaded"]:
     with st.sidebar:
         st.markdown("### Bid Evaluation System")
         st.markdown("---")
-        st.markdown('<div class="skeleton skeleton-text" style="width: 80%; height: 2rem;"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="skeleton skeleton-text" style="width: 60%; height: 2rem; margin-top: 0.5rem;"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="skeleton skeleton-text" style="width: 70%; height: 2rem; margin-top: 0.5rem;"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="skeleton skeleton-text" style="width: 50%; height: 2rem; margin-top: 0.5rem;"></div>', unsafe_allow_html=True)
+        for _ in range(4):
+            st.markdown('<div class="skeleton skeleton-text" style="height: 2rem; margin-bottom: 0.5rem;"></div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown('<div class="skeleton skeleton-text" style="width: 60%; height: 1rem;"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="skeleton skeleton-metric" style="height: 2rem; margin-top: 0.25rem;"></div>', unsafe_allow_html=True)
     
-    # Main content skeleton
-    st.markdown('<div class="skeleton skeleton-title" style="width: 30%; height: 2.5rem; margin-bottom: 2rem;"></div>', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
+    # Main content skeleton - looks like Upload page
+    st.markdown('<div class="skeleton skeleton-title" style="width: 15%; height: 2.5rem; margin-bottom: 2rem;"></div>', unsafe_allow_html=True)
+    col1, col2 = st.columns([2, 1])
     with col1:
-        show_skeleton_card()
+        st.markdown('<div class="skeleton skeleton-text-sm" style="width: 20%; margin-bottom: 0.5rem;"></div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background: #12121a; border: 2px dashed #27272a; border-radius: 8px; padding: 3rem; text-align: center;">
+            <div class="skeleton skeleton-text" style="width: 40%; margin: 0 auto 0.5rem auto;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 60%; margin: 0 auto;"></div>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        show_skeleton_card()
-    with col3:
-        show_skeleton_card()
-    show_skeleton_banner()
-    show_skeleton_table(4)
+        st.markdown('<div class="skeleton skeleton-text-sm" style="width: 40%; margin-bottom: 0.5rem;"></div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="skeleton-card" style="height: 200px;">
+            <div class="skeleton skeleton-text-sm" style="width: 60%;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 80%; margin-top: 0.5rem;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 50%; margin-top: 0.5rem;"></div>
+            <div class="skeleton skeleton-text-sm" style="width: 70%; margin-top: 0.5rem;"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Initialize controller
 @st.cache_resource
@@ -400,16 +466,25 @@ elif page == "Results":
     st.markdown('<h1 class="main-header">Evaluation Results</h1>', unsafe_allow_html=True)
     
     if "result" not in st.session_state:
-        # Show skeleton placeholder
-        show_skeleton_banner()
-        st.markdown('<p class="section-header">Awaiting Evaluation</p>', unsafe_allow_html=True)
-        cols = st.columns(4)
+        # Show contextual skeleton for Results page
+        show_skeleton_banner("winner")
+        
+        st.markdown('<p class="section-header">Decision Rationale</p>', unsafe_allow_html=True)
+        cols = st.columns(3)
         for col in cols:
             with col:
-                st.markdown('<div class="skeleton skeleton-metric" style="height: 4rem;"></div>', unsafe_allow_html=True)
+                st.markdown("""
+                <div class="skeleton-card" style="height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <div class="skeleton skeleton-text" style="width: 70%;"></div>
+                </div>
+                """, unsafe_allow_html=True)
+        
         st.markdown("---")
-        show_skeleton_table(3)
-        st.info("No evaluation data available. Please upload and evaluate bids first.")
+        st.markdown('<p class="section-header">Bid Score Analysis</p>', unsafe_allow_html=True)
+        for _ in range(3):
+            show_skeleton_card("bid")
+        
+        st.info("No evaluation data available. Upload bids and run evaluation first.")
         st.stop()
     
     result = st.session_state["result"]
@@ -556,16 +631,26 @@ elif page == "Results":
 elif page == "History":
     st.markdown('<h1 class="main-header">Evaluation History</h1>', unsafe_allow_html=True)
     
-    # Show skeleton while loading
+    # Show contextual skeleton while loading
     loading_container = st.empty()
     with loading_container.container():
-        cols = st.columns(4)
-        for col in cols:
-            with col:
-                st.markdown('<div class="skeleton skeleton-metric"></div>', unsafe_allow_html=True)
+        show_skeleton_stats_row()
         st.markdown("---")
-        show_skeleton_card()
-        show_skeleton_card()
+        st.markdown('<p class="section-header">Winner Distribution</p>', unsafe_allow_html=True)
+        for _ in range(3):
+            st.markdown("""
+            <div style="margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                    <div class="skeleton skeleton-text" style="width: 30%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 15%;"></div>
+                </div>
+                <div class="skeleton" style="height: 8px; border-radius: 4px;"></div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown('<p class="section-header">Recent Evaluations</p>', unsafe_allow_html=True)
+        for _ in range(2):
+            show_skeleton_card("bid")
     
     # Get history
     history = controller.get_evaluation_history(limit=20)
@@ -833,20 +918,20 @@ elif page == "Observability":
     """, unsafe_allow_html=True)
     
     if "result" not in st.session_state:
+        # Contextual skeleton for Observability page
+        show_skeleton_banner("trace")
+        
         st.markdown("""
-        <div class="trace-header">
-            <div class="skeleton skeleton-text" style="width: 40%; height: 1.5rem;"></div>
-            <div class="skeleton skeleton-text-sm" style="width: 60%; margin-top: 0.5rem;"></div>
-            <div style="display: flex; gap: 2rem; margin-top: 1rem;">
-                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
-                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
-                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
-                <div class="skeleton" style="width: 80px; height: 3rem;"></div>
-            </div>
+        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); 
+                    border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+            <div class="skeleton skeleton-text" style="width: 30%;"></div>
         </div>
         """, unsafe_allow_html=True)
-        show_skeleton_card()
-        show_skeleton_card()
+        
+        st.markdown('<p class="section-header">Run Trace</p>', unsafe_allow_html=True)
+        for _ in range(4):
+            show_skeleton_card("trace")
+        
         st.info("No evaluation data available. Run an evaluation first.")
         st.stop()
     
