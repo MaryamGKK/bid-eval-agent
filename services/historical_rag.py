@@ -159,9 +159,9 @@ class HistoricalRAG:
                  score.get("final_weighted_score", 0)) / total_evals
             )
             
-            # Track flags
-            all_flags = meta.get("all_flags", [])
-            all_flags.extend(score.get("flags", []))
+            # Track flags (stored as JSON string for ChromaDB compatibility)
+            existing_flags = json.loads(meta.get("all_flags", "[]"))
+            existing_flags.extend(score.get("flags", []))
             
             profile_data = {
                 "company_name": company,
@@ -169,8 +169,8 @@ class HistoricalRAG:
                 "total_wins": total_wins,
                 "win_rate": total_wins / total_evals,
                 "avg_score": avg_score,
-                "common_flags": list(set(all_flags)),
-                "all_flags": all_flags,
+                "common_flags": json.dumps(list(set(existing_flags))),
+                "all_flags": json.dumps(existing_flags),
                 "last_updated": datetime.now().isoformat()
             }
             
@@ -182,14 +182,15 @@ class HistoricalRAG:
         else:
             # Create new profile
             profile_id = self._generate_id(company)
+            flags = score.get("flags", [])
             profile_data = {
                 "company_name": company,
                 "total_evaluations": 1,
                 "total_wins": 1 if is_winner else 0,
                 "win_rate": 1.0 if is_winner else 0.0,
                 "avg_score": score.get("final_weighted_score", 0),
-                "common_flags": score.get("flags", []),
-                "all_flags": score.get("flags", []),
+                "common_flags": json.dumps(flags),
+                "all_flags": json.dumps(flags),
                 "last_updated": datetime.now().isoformat()
             }
             
@@ -209,7 +210,7 @@ class HistoricalRAG:
             "timeline_months": bid.get("timeline", {}).get("estimated_months", 0),
             "confidence_level": bid.get("timeline", {}).get("confidence_level", 0),
             "critical_path_risk": bid.get("timeline", {}).get("critical_path_risk", ""),
-            "scope_items": bid.get("scope_coverage", {}).get("included", []),
+            "scope_items": json.dumps(bid.get("scope_coverage", {}).get("included", [])),
             "timestamp": datetime.now().isoformat()
         }
         
@@ -318,7 +319,8 @@ class HistoricalRAG:
         # Identify risk patterns from flags
         risk_patterns = []
         if history:
-            flags = history.get("common_flags", [])
+            flags_raw = history.get("common_flags", "[]")
+            flags = json.loads(flags_raw) if isinstance(flags_raw, str) else flags_raw
             if "f1" in flags:
                 risk_patterns.append("Frequently subcontracts critical work")
             if "f2" in flags:
@@ -387,10 +389,7 @@ def get_historical_rag(persist_directory: str = "./chroma_db") -> Optional[Histo
         return None
     
     if _historical_rag is None:
-        try:
-            _historical_rag = HistoricalRAG(persist_directory)
-        except Exception:
-            return None
+        _historical_rag = HistoricalRAG(persist_directory)
     
     return _historical_rag
 

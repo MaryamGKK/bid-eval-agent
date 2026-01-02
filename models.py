@@ -78,7 +78,30 @@ class Bid:
     
     @classmethod
     def from_dict(cls, data: dict) -> "Bid":
-        """Create Bid from JSON dict."""
+        """Create Bid from JSON dict. Handles optional fields gracefully."""
+        # Parse delivery history (optional)
+        delivery_data = data.get("delivery_history", {})
+        delivery_history = DeliveryHistory(
+            on_time_percentage=delivery_data.get("on_time_percentage", 0.8),
+            on_budget_percentage=delivery_data.get("on_budget_percentage", 0.8),
+            known_delays=delivery_data.get("known_delays", [])
+        )
+        
+        # Parse legal compliance (optional)
+        legal_data = data.get("legal_and_compliance", {})
+        legal_compliance = LegalCompliance(
+            open_litigation=legal_data.get("open_litigation", False),
+            safety_violations_last_5_years=legal_data.get("safety_violations_last_5_years", 0)
+        )
+        
+        # Parse bid metadata (optional)
+        meta_data = data.get("bid_metadata", {})
+        bid_metadata = BidMetadata(
+            submission_channel=meta_data.get("submission_channel", "unknown"),
+            submission_timestamp=meta_data.get("submission_timestamp", ""),
+            bid_revision=meta_data.get("bid_revision", 1)
+        )
+        
         return cls(
             bid_id=data["bid_id"],
             company_name=data["company_name"],
@@ -86,7 +109,7 @@ class Bid:
             timeline=Timeline(
                 estimated_months=data["timeline"]["estimated_months"],
                 confidence_level=data["timeline"]["confidence_level"],
-                critical_path_risk=data["timeline"]["critical_path_risk"]
+                critical_path_risk=data["timeline"].get("critical_path_risk", "Medium")
             ),
             scope_coverage=ScopeCoverage(
                 included=data["scope_coverage"]["included"],
@@ -96,20 +119,9 @@ class Bid:
             assumptions=data.get("assumptions", []),
             dependencies=data.get("dependencies", []),
             prior_similar_projects_count=data.get("prior_similar_projects_count", 0),
-            delivery_history=DeliveryHistory(
-                on_time_percentage=data["delivery_history"]["on_time_percentage"],
-                on_budget_percentage=data["delivery_history"]["on_budget_percentage"],
-                known_delays=data["delivery_history"].get("known_delays", [])
-            ),
-            legal_and_compliance=LegalCompliance(
-                open_litigation=data["legal_and_compliance"]["open_litigation"],
-                safety_violations_last_5_years=data["legal_and_compliance"]["safety_violations_last_5_years"]
-            ),
-            bid_metadata=BidMetadata(
-                submission_channel=data["bid_metadata"]["submission_channel"],
-                submission_timestamp=data["bid_metadata"]["submission_timestamp"],
-                bid_revision=data["bid_metadata"]["bid_revision"]
-            )
+            delivery_history=delivery_history,
+            legal_and_compliance=legal_compliance,
+            bid_metadata=bid_metadata
         )
 
 

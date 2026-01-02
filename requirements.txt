@@ -16,5 +16,6 @@ opentelemetry-sdk
 # Vector Database (Historical RAG)
 chromadb
 
-# Future: Add for better semantic search
-# sentence-transformers
+# Agent orchestration
+langgraph
+langchain-core

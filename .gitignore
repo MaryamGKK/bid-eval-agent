@@ -5,9 +5,6 @@ venv311/
 __pycache__/
 *.pyc
 
-# Keep models/ folder (bundled weights)
-# !models/
-
 # Streamlit
 .streamlit/secrets.toml
 

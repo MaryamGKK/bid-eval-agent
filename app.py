@@ -140,14 +140,11 @@ page = st.sidebar.radio(
 )
 
 # Show stats in sidebar
-try:
-    stats = controller.get_stats()
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**Statistics**")
-    st.sidebar.metric("Total Evaluations", stats["evaluations"]["total_evaluations"])
-    st.sidebar.metric("Cached Companies", stats["cached_companies"])
-except Exception:
-    pass
+stats = controller.get_stats()
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Statistics**")
+st.sidebar.metric("Total Evaluations", stats["evaluations"]["total_evaluations"])
+st.sidebar.metric("Cached Companies", stats["cached_companies"])
 
 # Flag definitions
 FLAG_DEFINITIONS = {
@@ -354,23 +351,20 @@ elif page == "Results":
                     for src in insight["sources"][:3]:
                         st.markdown(f"- {src}")
             
-            # Historical insights
-            try:
-                historical_insights = controller.get_historical_insights()
-                if company in historical_insights:
-                    hist = historical_insights[company]
-                    st.markdown("**Historical Performance:**")
-                    h1, h2, h3 = st.columns(3)
-                    h1.metric("Win Rate", f"{hist.get('win_rate', 0):.0%}")
-                    h2.metric("Avg Score", f"{hist.get('avg_score', 0):.2f}")
-                    h3.metric("Data Confidence", f"{hist.get('confidence', 0):.0%}")
-                    
-                    if hist.get("risk_patterns"):
-                        st.markdown("**Risk Patterns from History:**")
-                        for pattern in hist["risk_patterns"]:
-                            st.markdown(f"- {pattern}")
-            except Exception:
-                pass  # Historical RAG not available
+                    # Historical insights
+                    historical_insights = controller.get_historical_insights()
+                    if company in historical_insights:
+                        hist = historical_insights[company]
+                        st.markdown("**Historical Performance:**")
+                        h1, h2, h3 = st.columns(3)
+                        h1.metric("Win Rate", f"{hist.get('win_rate', 0):.0%}")
+                        h2.metric("Avg Score", f"{hist.get('avg_score', 0):.2f}")
+                        h3.metric("Data Confidence", f"{hist.get('confidence', 0):.0%}")
+                        
+                        if hist.get("risk_patterns"):
+                            st.markdown("**Risk Patterns from History:**")
+                            for pattern in hist["risk_patterns"]:
+                                st.markdown(f"- {pattern}")
     
     st.markdown("---")
     
@@ -454,31 +448,28 @@ elif page == "History":
     st.markdown("---")
     
     # Historical RAG stats
-    try:
-        hist_stats = controller.get_historical_stats()
-        if hist_stats.get("enabled"):
-            st.markdown('<p class="section-header">Historical Learning (RAG)</p>', unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Indexed Evaluations", hist_stats.get("total_evaluations", 0))
-            col2.metric("Company Profiles", hist_stats.get("total_companies", 0))
-            col3.metric("Bid Patterns", hist_stats.get("total_bid_patterns", 0))
-            
-            # Top performers
-            top_performers = controller.get_top_performers(limit=5)
-            if top_performers:
-                st.markdown("**Top Performing Companies:**")
-                for i, perf in enumerate(top_performers, 1):
-                    st.markdown(
-                        f"{i}. **{perf.get('company_name')}** — "
-                        f"Win Rate: {perf.get('win_rate', 0):.0%}, "
-                        f"Avg Score: {perf.get('avg_score', 0):.2f}, "
-                        f"Evaluations: {perf.get('total_evaluations', 0)}"
-                    )
-            
-            st.markdown("---")
-    except Exception:
-        pass  # Historical RAG not available
+    hist_stats = controller.get_historical_stats()
+    if hist_stats.get("enabled"):
+        st.markdown('<p class="section-header">Historical Learning (RAG)</p>', unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Indexed Evaluations", hist_stats.get("total_evaluations", 0))
+        col2.metric("Company Profiles", hist_stats.get("total_companies", 0))
+        col3.metric("Bid Patterns", hist_stats.get("total_bid_patterns", 0))
+        
+        # Top performers
+        top_performers = controller.get_top_performers(limit=5)
+        if top_performers:
+            st.markdown("**Top Performing Companies:**")
+            for i, perf in enumerate(top_performers, 1):
+                st.markdown(
+                    f"{i}. **{perf.get('company_name')}** — "
+                    f"Win Rate: {perf.get('win_rate', 0):.0%}, "
+                    f"Avg Score: {perf.get('avg_score', 0):.2f}, "
+                    f"Evaluations: {perf.get('total_evaluations', 0)}"
+                )
+        
+        st.markdown("---")
     
     # Recent evaluations
     st.markdown('<p class="section-header">Recent Evaluations</p>', unsafe_allow_html=True)
@@ -783,8 +774,20 @@ elif page == "Observability":
     </div>
     """, unsafe_allow_html=True)
     
+    # Workflow info
+    workflow_info = controller.get_workflow_info()
+    if workflow_info.get("using_langgraph"):
+        st.markdown(f"""
+        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); 
+                    border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; 
+                    align-items: center; gap: 0.5rem;">
+            <span style="color: #6366f1; font-weight: 600;">⬡ LangGraph</span>
+            <span style="color: #a1a1aa; font-size: 0.8rem;">Active workflow orchestration</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Tabs for different views
-    trace_tab, metrics_tab, raw_tab = st.tabs(["Trace", "Metrics", "Raw Events"])
+    trace_tab, metrics_tab, graph_tab, raw_tab = st.tabs(["Trace", "Metrics", "Graph", "Raw Events"])
     
     with trace_tab:
         st.markdown('<p class="section-header">Run Trace</p>', unsafe_allow_html=True)
@@ -978,6 +981,93 @@ elif page == "Observability":
             </div>
         </div>
         """, unsafe_allow_html=True)
+    
+    with graph_tab:
+        st.markdown('<p class="section-header">LangGraph Workflow</p>', unsafe_allow_html=True)
+        
+        workflow_info = controller.get_workflow_info()
+        nodes = workflow_info.get("nodes", [])
+        
+        st.markdown("""
+        <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1.5rem;">
+            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; 
+                        letter-spacing: 0.05em; margin-bottom: 1rem;">Workflow Nodes</div>
+        """, unsafe_allow_html=True)
+        
+        # Draw the graph as a vertical flow
+        node_colors = {
+            "parse_bids": "#3b82f6",
+            "check_cache": "#6366f1",
+            "gather_insights": "#f59e0b",
+            "gather_historical": "#10b981",
+            "score_bids": "#8b5cf6",
+            "rank_bids": "#ec4899",
+            "generate_explanation": "#ef4444",
+            "build_result": "#06b6d4",
+            "persist_result": "#22c55e"
+        }
+        
+        node_icons = {
+            "parse_bids": "📥",
+            "check_cache": "💾",
+            "gather_insights": "🔍",
+            "gather_historical": "📚",
+            "score_bids": "📊",
+            "rank_bids": "🏆",
+            "generate_explanation": "🤖",
+            "build_result": "📝",
+            "persist_result": "💿"
+        }
+        
+        for i, node in enumerate(nodes):
+            color = node_colors.get(node, "#71717a")
+            icon = node_icons.get(node, "•")
+            is_last = i == len(nodes) - 1
+            
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; margin-bottom: {0 if is_last else '0.5rem'};">
+                <div style="width: 36px; height: 36px; background: {color}20; border: 2px solid {color}; 
+                            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+                            font-size: 1rem; margin-right: 1rem;">
+                    {icon}
+                </div>
+                <div>
+                    <div style="color: #fafafa; font-weight: 500; font-size: 0.875rem;">{node.replace('_', ' ').title()}</div>
+                    <div style="color: #71717a; font-size: 0.75rem;">Node {i + 1}</div>
+                </div>
+            </div>
+            {'<div style="width: 2px; height: 16px; background: #3f3f46; margin-left: 17px;"></div>' if not is_last else ''}
+            """, unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Graph state
+        graph_state = controller.get_graph_state()
+        if graph_state:
+            st.markdown('<p class="section-header">Last Execution State</p>', unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Cache Hit", "Yes" if graph_state.get("cache_hit") else "No")
+            
+            with col2:
+                bids_parsed = len(graph_state.get("parsed_bids", []))
+                st.metric("Bids Parsed", bids_parsed)
+            
+            with col3:
+                eval_id = graph_state.get("evaluation_id", "N/A")
+                st.markdown(f"**Evaluation ID:** `{eval_id[:12] if eval_id else 'N/A'}...`")
+            
+            # Show historical insights gathered
+            hist_insights = graph_state.get("historical_insights", {})
+            if hist_insights:
+                st.markdown("**Historical Insights Retrieved:**")
+                for company, insight in hist_insights.items():
+                    st.markdown(f"- **{company}**: Win Rate {insight.get('win_rate', 0):.0%}, "
+                                f"Avg Score {insight.get('avg_score', 0):.2f}")
     
     with raw_tab:
         st.markdown('<p class="section-header">Raw Event Data</p>', unsafe_allow_html=True)
