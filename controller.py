@@ -4,8 +4,7 @@
 from typing import List, Dict, Optional
 
 from models import Bid, BidScore, EvaluationResult
-from services.graph import bid_evaluation_app
-from services.observer import Observer
+from services.graph import bid_evaluation_app, get_observer
 from services.memory import get_memory_store
 from services.historical_rag import get_historical_rag
 
@@ -14,12 +13,16 @@ class Controller:
     """Orchestrate the bid evaluation workflow with LangGraph."""
     
     def __init__(self):
-        self.observer = Observer()
         self.memory = get_memory_store()
         self.historical_rag = get_historical_rag()
         self._last_evaluation_id: Optional[str] = None
         self._last_historical_insights: Dict[str, dict] = {}
         self._last_graph_state: Optional[Dict] = None
+    
+    @property
+    def observer(self):
+        """Get the shared observer from the graph module."""
+        return get_observer()
     
     def evaluate(self, bids: List[Bid], use_cached_result: bool = False) -> EvaluationResult:
         """
@@ -35,13 +38,6 @@ class Controller:
         7. generate_explanation - Generate LLM explanation
         8. build_result - Build final result
         9. persist_result - Persist to memory
-        
-        Args:
-            bids: List of Bid objects to evaluate
-            use_cached_result: If True, return cached result if same input exists
-            
-        Raises:
-            ValueError: If no bids provided
         """
         if not bids:
             raise ValueError("No bids provided for evaluation")
@@ -49,8 +45,9 @@ class Controller:
         # Convert bids to dict for LangGraph state
         input_data = [self._bid_to_dict(b) for b in bids]
         
+        # Clear and start fresh trace
         self.observer.clear()
-        self.observer.log("request", "input", {"bid_count": len(input_data)})
+        trace_id = self.observer.start_trace("bid_evaluation")
         
         # Prepare initial state
         initial_state = {
@@ -66,15 +63,24 @@ class Controller:
             "result": None,
             "error": None,
             "cache_hit": False,
-            "evaluation_id": None
+            "evaluation_id": None,
+            "trace_id": trace_id
         }
         
-        # Run the graph
-        with self.observer.span("langgraph_evaluation", {"bid_count": len(input_data)}) as root_span:
+        # Run the graph with root trace
+        from services.observer import RunType
+        
+        with self.observer.trace_run(
+            name="bid_evaluation_pipeline",
+            run_type=RunType.CHAIN,
+            inputs={"bid_count": len(input_data), "companies": [b["company_name"] for b in input_data]},
+            tags=["pipeline", "root"]
+        ) as root_run:
             final_state = bid_evaluation_app.invoke(initial_state)
             self._last_graph_state = final_state
             
             if final_state.get("error"):
+                root_run.outputs = {"error": final_state["error"]}
                 raise ValueError(final_state["error"])
             
             result = final_state["result"]
@@ -82,14 +88,12 @@ class Controller:
             self._last_historical_insights = final_state.get("historical_insights", {})
             
             if result:
-                root_span.set_attribute("winner.company", result.final_recommendation.company_name)
-                root_span.set_attribute("winner.score", result.final_recommendation.confidence)
-                root_span.set_attribute("graph.cache_hit", final_state.get("cache_hit", False))
-            
-            self.observer.log("complete", "output", {
-                "winner": result.final_recommendation.company_name if result else None,
-                "cache_hit": final_state.get("cache_hit", False)
-            })
+                root_run.outputs = {
+                    "winner": result.final_recommendation.company_name,
+                    "confidence": result.final_recommendation.confidence,
+                    "cache_hit": final_state.get("cache_hit", False),
+                    "evaluation_id": self._last_evaluation_id
+                }
         
         return result
     
@@ -111,15 +115,29 @@ class Controller:
             }
         }
     
-    # ==================== PUBLIC API ====================
+    # ==================== OBSERVABILITY API ====================
     
     def get_events(self) -> List[Dict]:
         """Get all logged events."""
         return self.observer.get_events()
     
+    def get_runs(self) -> List[Dict]:
+        """Get all runs (LangSmith-style)."""
+        return self.observer.get_runs()
+    
+    def get_run_tree(self) -> List[Dict]:
+        """Get run tree structure for visualization."""
+        return self.observer.get_run_tree()
+    
+    def get_trace(self) -> Dict:
+        """Get full trace details (LangSmith-style)."""
+        return self.observer.get_trace()
+    
     def get_summary(self) -> Dict:
         """Get observability summary."""
         return self.observer.get_summary()
+    
+    # ==================== EVALUATION API ====================
     
     def get_last_evaluation_id(self) -> Optional[str]:
         """Get the ID of the last evaluation."""
@@ -171,6 +189,8 @@ class Controller:
                 correct_winner_id=correct_winner_id
             )
     
+    # ==================== HISTORICAL RAG API ====================
+    
     def get_historical_insights(self) -> Dict[str, dict]:
         """Get historical insights from the last evaluation."""
         return self._last_historical_insights
@@ -195,6 +215,8 @@ class Controller:
         if self.historical_rag:
             return self.historical_rag.get_company_history(company_name)
         return None
+    
+    # ==================== GRAPH STATE API ====================
     
     def get_graph_state(self) -> Optional[Dict]:
         """Get the last LangGraph execution state."""

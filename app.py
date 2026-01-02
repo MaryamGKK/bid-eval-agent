@@ -768,63 +768,40 @@ elif page == "Observability":
             color: #fafafa;
             font-weight: 500;
         }
-        .span-row {
+        .run-row {
             background: #18181b;
             border: 1px solid #27272a;
             border-radius: 6px;
             margin-bottom: 0.5rem;
             overflow: hidden;
         }
-        .span-header {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            gap: 0.75rem;
-            cursor: pointer;
-        }
-        .span-header:hover {
-            background: #1f1f23;
-        }
-        .span-indent {
-            width: 20px;
-            border-left: 2px solid #3f3f46;
-            height: 100%;
-        }
-        .span-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
+        .run-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             flex-shrink: 0;
         }
-        .span-icon-chain { background: #3b82f6; color: white; }
-        .span-icon-llm { background: #8b5cf6; color: white; }
-        .span-icon-tool { background: #f59e0b; color: white; }
-        .span-icon-retriever { background: #10b981; color: white; }
-        .span-name {
-            font-size: 0.875rem;
-            color: #fafafa;
-            font-weight: 500;
-            flex-grow: 1;
-        }
-        .span-type {
-            font-size: 0.7rem;
+        .run-icon-chain { background: #3b82f6; color: white; }
+        .run-icon-llm { background: #8b5cf6; color: white; }
+        .run-icon-tool { background: #f59e0b; color: white; }
+        .run-icon-retriever { background: #10b981; color: white; }
+        .run-icon-parser { background: #06b6d4; color: white; }
+        .run-icon-prompt { background: #ec4899; color: white; }
+        .run-type-badge {
+            font-size: 0.65rem;
             color: #71717a;
             text-transform: uppercase;
             background: #27272a;
-            padding: 0.2rem 0.5rem;
+            padding: 0.15rem 0.4rem;
             border-radius: 4px;
-        }
-        .span-duration {
-            font-size: 0.8rem;
-            color: #a1a1aa;
-            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 500;
         }
         .duration-bar-container {
-            width: 120px;
+            width: 100px;
             height: 6px;
             background: #27272a;
             border-radius: 3px;
@@ -832,16 +809,18 @@ elif page == "Observability":
         }
         .duration-bar {
             height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             border-radius: 3px;
         }
-        .span-details {
-            background: #0f0f12;
-            border-top: 1px solid #27272a;
-            padding: 1rem;
-        }
-        .detail-section {
-            margin-bottom: 1rem;
+        .token-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: #a78bfa;
         }
         .detail-label {
             font-size: 0.7rem;
@@ -850,51 +829,10 @@ elif page == "Observability":
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
-        .detail-content {
-            background: #18181b;
-            border: 1px solid #27272a;
-            border-radius: 4px;
-            padding: 0.75rem;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.8rem;
-            color: #d4d4d8;
-            overflow-x: auto;
-        }
-        .io-tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-        }
-        .io-tab {
-            padding: 0.4rem 0.75rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: 1px solid #27272a;
-            background: transparent;
-            color: #a1a1aa;
-        }
-        .io-tab-active {
-            background: #27272a;
-            color: #fafafa;
-        }
-        .token-stat {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            background: #27272a;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            color: #a1a1aa;
-            margin-right: 0.5rem;
-        }
     </style>
     """, unsafe_allow_html=True)
     
     if "result" not in st.session_state:
-        # Show skeleton placeholder for observability
         st.markdown("""
         <div class="trace-header">
             <div class="skeleton skeleton-text" style="width: 40%; height: 1.5rem;"></div>
@@ -909,228 +847,324 @@ elif page == "Observability":
         """, unsafe_allow_html=True)
         show_skeleton_card()
         show_skeleton_card()
-        show_skeleton_card()
         st.info("No evaluation data available. Run an evaluation first.")
         st.stop()
     
     result = st.session_state["result"]
-    events = controller.get_events()
     summary = controller.get_summary()
+    trace_data = controller.get_trace()
+    runs = controller.get_runs()
     
     # Trace Header (LangSmith style)
-    trace_id = summary.get("trace_ids", ["N/A"])[0] if summary.get("trace_ids") else "N/A"
-    total_duration = summary.get("total_duration_ms", 0)
+    trace_id = trace_data.get("trace_id", "N/A") if trace_data else "N/A"
+    total_duration = trace_data.get("total_latency_ms", 0) if trace_data else summary.get("total_duration_ms", 0)
+    total_tokens = trace_data.get("total_tokens", 0) if trace_data else summary.get("total_tokens", 0)
+    trace_status = trace_data.get("status", "success") if trace_data else "success"
+    
+    status_class = "status-badge" if trace_status == "success" else "status-badge status-badge-error"
     
     st.markdown(f"""
     <div class="trace-header">
         <div class="trace-title">
-            <span class="trace-name">bid_evaluation</span>
-            <span class="status-badge">Success</span>
+            <span class="trace-name">bid_evaluation_pipeline</span>
+            <span class="{status_class}">{trace_status.upper()}</span>
         </div>
-        <div class="trace-id">Trace ID: {trace_id}</div>
+        <div class="trace-id">Trace ID: {trace_id[:32] if len(str(trace_id)) > 32 else trace_id}</div>
         <div class="trace-meta">
             <div class="meta-item">
                 <span class="meta-label">Latency</span>
                 <span class="meta-value">{total_duration:.0f}ms</span>
             </div>
             <div class="meta-item">
+                <span class="meta-label">Total Tokens</span>
+                <span class="meta-value">{total_tokens:,}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Runs</span>
+                <span class="meta-value">{summary.get('total_runs', len(runs))}</span>
+            </div>
+            <div class="meta-item">
                 <span class="meta-label">LLM Calls</span>
                 <span class="meta-value">{summary.get('llm_calls', 0)}</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Tool Calls</span>
-                <span class="meta-value">{summary.get('search_count', 0)}</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Total Steps</span>
-                <span class="meta-value">{summary.get('total_events', 0)}</span>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Workflow info
-    workflow_info = controller.get_workflow_info()
-    if workflow_info.get("using_langgraph"):
-        st.markdown(f"""
-        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); 
-                    border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; 
-                    align-items: center; gap: 0.5rem;">
-            <span style="color: #6366f1; font-weight: 600;">⬡ LangGraph</span>
-            <span style="color: #a1a1aa; font-size: 0.8rem;">Active workflow orchestration</span>
-        </div>
-        """, unsafe_allow_html=True)
+    # Workflow badge
+    st.markdown("""
+    <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); 
+                border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; 
+                align-items: center; gap: 0.5rem;">
+        <span style="color: #6366f1; font-weight: 600;">⬡ LangGraph</span>
+        <span style="color: #a1a1aa; font-size: 0.8rem;">Active workflow orchestration</span>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Tabs for different views
-    trace_tab, metrics_tab, graph_tab, raw_tab = st.tabs(["Trace", "Metrics", "Graph", "Raw Events"])
+    trace_tab, runs_tab, metrics_tab, graph_tab, raw_tab = st.tabs(["Trace Tree", "All Runs", "Metrics", "Graph", "Raw"])
     
     with trace_tab:
-        st.markdown('<p class="section-header">Run Trace</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">Run Trace (LangSmith Style)</p>', unsafe_allow_html=True)
         
-        if events:
-            # Calculate max duration for scaling bars
-            max_duration = max([e.get("duration_ms", 0) for e in events] + [1])
+        run_tree = controller.get_run_tree()
+        
+        if runs:
+            max_duration = max([r.get("latency_ms", 0) or 0 for r in runs] + [1])
             
-            # Group events into hierarchy
-            def get_span_icon(event_type):
+            def get_run_icon(run_type: str) -> tuple:
                 icons = {
-                    "request": ("▶", "chain"),
-                    "search": ("⚡", "tool"),
-                    "score": ("◆", "retriever"),
-                    "llm": ("◈", "llm"),
-                    "complete": ("✓", "chain")
+                    "chain": ("⛓️", "chain"),
+                    "llm": ("🤖", "llm"),
+                    "tool": ("🔧", "tool"),
+                    "retriever": ("🔍", "retriever"),
+                    "parser": ("📋", "parser"),
+                    "prompt": ("💬", "prompt"),
+                    "embedding": ("📊", "retriever")
                 }
-                return icons.get(event_type, ("•", "chain"))
+                return icons.get(run_type, ("•", "chain"))
             
-            def get_indent_level(node):
-                if node in ["input", "output", "batch_complete"]:
-                    return 0
-                elif node in ["start", "result"]:
-                    return 1
-                elif node == "complete":
-                    return 1
-                return 0
+            def get_duration_color(duration: float, max_dur: float) -> str:
+                if not duration or not max_dur:
+                    return "#3b82f6"
+                ratio = duration / max_dur
+                if ratio > 0.7:
+                    return "#ef4444"  # Red for slow
+                elif ratio > 0.4:
+                    return "#f59e0b"  # Amber for medium
+                return "#22c55e"  # Green for fast
             
-            for i, event in enumerate(events):
-                event_type = event["type"]
-                node = event["node"]
-                duration = event.get("duration_ms", 0)
+            def render_run(run: dict, depth: int = 0):
+                """Render a single run with indentation."""
+                run_type = run.get("run_type", "chain")
+                icon, icon_class = get_run_icon(run_type)
+                duration = run.get("latency_ms") or 0
                 duration_pct = min((duration / max_duration) * 100, 100) if max_duration > 0 else 0
-                icon, icon_class = get_span_icon(event_type)
-                indent = get_indent_level(node)
+                duration_color = get_duration_color(duration, max_duration)
+                status = run.get("status", "success")
                 
-                # Create span row
-                span_name = f"{event_type}.{node}"
+                # Token usage display
+                token_html = ""
+                if run.get("token_usage"):
+                    tokens = run["token_usage"]
+                    token_html = f"""
+                    <span class="token-badge">
+                        ◈ {tokens.get('total_tokens', 0):,} tokens
+                    </span>
+                    """
                 
-                with st.expander(f"{span_name}", expanded=False):
-                    # Header row with custom styling
-                    col1, col2, col3, col4 = st.columns([3, 1, 2, 1])
-                    
-                    with col1:
-                        st.markdown(f"""
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="span-icon span-icon-{icon_class}">{icon}</span>
-                            <span style="color: #fafafa; font-weight: 500;">{event_type}</span>
-                            <span style="color: #71717a;">→</span>
-                            <span style="color: #a1a1aa;">{node}</span>
+                indent_px = depth * 24
+                
+                with st.expander(f"{'│  ' * depth}{run.get('name', 'unknown')}", expanded=depth == 0):
+                    # Header
+                    st.markdown(f"""
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <div class="run-icon run-icon-{icon_class}">{icon}</div>
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: #fafafa; font-weight: 600;">{run.get('name', 'unknown')}</span>
+                                <span class="run-type-badge">{run_type.upper()}</span>
+                                {token_html}
+                            </div>
+                            <div style="color: #71717a; font-size: 0.75rem; margin-top: 0.25rem;">
+                                ID: {run.get('id', 'N/A')[:12]}...
+                            </div>
                         </div>
-                        """, unsafe_allow_html=True)
-                    
-                    with col2:
-                        st.markdown(f'<span class="span-type">{event_type.upper()}</span>', unsafe_allow_html=True)
-                    
-                    with col3:
-                        if duration > 0:
-                            st.markdown(f"""
+                        <div style="text-align: right;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <div class="duration-bar-container">
-                                    <div class="duration-bar" style="width: {duration_pct}%;"></div>
+                                    <div class="duration-bar" style="width: {duration_pct}%; background: {duration_color};"></div>
                                 </div>
-                                <span class="span-duration">{duration:.0f}ms</span>
+                                <span style="color: #a1a1aa; font-size: 0.8rem; font-family: monospace; min-width: 60px;">
+                                    {duration:.0f}ms
+                                </span>
                             </div>
-                            """, unsafe_allow_html=True)
+                            <span style="color: {'#22c55e' if status == 'success' else '#ef4444'}; font-size: 0.7rem;">
+                                {status.upper()}
+                            </span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
-                    with col4:
-                        if event.get("span_id"):
-                            st.markdown(f'<span class="trace-id">{event["span_id"][:8]}...</span>', unsafe_allow_html=True)
+                    # Input/Output tabs
+                    in_tab, out_tab, meta_tab = st.tabs(["Input", "Output", "Metadata"])
                     
-                    st.markdown("---")
+                    with in_tab:
+                        inputs = run.get("inputs", {})
+                        if inputs:
+                            st.json(inputs)
+                        else:
+                            st.markdown("*No input data*")
                     
-                    # Input/Output sections
-                    io_col1, io_col2 = st.columns(2)
+                    with out_tab:
+                        outputs = run.get("outputs")
+                        if outputs:
+                            st.json(outputs)
+                        else:
+                            st.markdown("*No output data*")
                     
-                    with io_col1:
-                        st.markdown('<div class="detail-label">INPUT</div>', unsafe_allow_html=True)
-                        st.json(event.get("data", {}))
-                    
-                    with io_col2:
-                        st.markdown('<div class="detail-label">METADATA</div>', unsafe_allow_html=True)
-                        metadata = {
-                            "timestamp": event.get("timestamp", ""),
-                            "trace_id": event.get("trace_id", "N/A"),
-                            "span_id": event.get("span_id", "N/A"),
-                            "duration_ms": event.get("duration_ms", 0)
+                    with meta_tab:
+                        meta = {
+                            "id": run.get("id"),
+                            "run_type": run_type,
+                            "status": status,
+                            "start_time": run.get("start_time"),
+                            "end_time": run.get("end_time"),
+                            "latency_ms": duration,
+                            "parent_run_id": run.get("parent_run_id"),
+                            "child_runs": len(run.get("child_run_ids", [])),
+                            "tags": run.get("tags", [])
                         }
-                        st.json(metadata)
+                        if run.get("model"):
+                            meta["model"] = run["model"]
+                        if run.get("token_usage"):
+                            meta["token_usage"] = run["token_usage"]
+                        if run.get("error"):
+                            meta["error"] = run["error"]
+                            meta["error_type"] = run.get("error_type")
+                        st.json(meta)
+                
+                # Render children
+                for child in run.get("children", []):
+                    if child:
+                        render_run(child, depth + 1)
+            
+            # Render the tree
+            if run_tree:
+                for root_run in run_tree:
+                    if root_run:
+                        render_run(root_run)
+            else:
+                # Fallback to flat list
+                for run in runs:
+                    render_run(run)
         else:
-            st.info("No trace data available")
+            st.info("No runs recorded yet. Run an evaluation to see traces.")
+    
+    with runs_tab:
+        st.markdown('<p class="section-header">All Runs (Flat View)</p>', unsafe_allow_html=True)
+        
+        if runs:
+            # Summary by type
+            runs_by_type = summary.get("runs_by_type", {})
+            if runs_by_type:
+                cols = st.columns(len(runs_by_type))
+                for i, (run_type, count) in enumerate(runs_by_type.items()):
+                    with cols[i]:
+                        icon, _ = get_run_icon(run_type)
+                        st.metric(f"{icon} {run_type.title()}", count)
+            
+            st.markdown("---")
+            
+            # Table view
+            run_data = []
+            for run in runs:
+                run_data.append({
+                    "Name": run.get("name", ""),
+                    "Type": run.get("run_type", "").upper(),
+                    "Status": "✅" if run.get("status") == "success" else "❌",
+                    "Latency (ms)": run.get("latency_ms") or 0,
+                    "Tokens": run.get("token_usage", {}).get("total_tokens", 0) if run.get("token_usage") else 0
+                })
+            
+            st.dataframe(
+                run_data,
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("No runs recorded")
     
     with metrics_tab:
         st.markdown('<p class="section-header">Performance Metrics</p>', unsafe_allow_html=True)
         
-        # Latency breakdown
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("**Latency Breakdown**")
+            st.markdown("**Latency Breakdown by Run Type**")
             
-            # Calculate latencies by type
-            search_events = [e for e in events if e["type"] == "search" and e.get("duration_ms")]
-            llm_events = [e for e in events if e["type"] == "llm" and e.get("duration_ms")]
-            score_events = [e for e in events if e["type"] == "score"]
-            
-            search_latency = sum(e.get("duration_ms", 0) for e in search_events)
-            llm_latency = sum(e.get("duration_ms", 0) for e in llm_events)
-            
-            st.markdown(f"""
-            <div style="background: #18181b; border: 1px solid #27272a; border-radius: 6px; padding: 1rem;">
-                <div style="margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <span style="color: #a1a1aa; font-size: 0.8rem;">Search Operations</span>
-                        <span style="color: #fafafa; font-size: 0.8rem;">{search_latency:.0f}ms</span>
+            if runs:
+                latency_by_type = {}
+                for run in runs:
+                    rt = run.get("run_type", "other")
+                    latency_by_type[rt] = latency_by_type.get(rt, 0) + (run.get("latency_ms") or 0)
+                
+                type_colors = {
+                    "chain": "#3b82f6",
+                    "llm": "#8b5cf6",
+                    "tool": "#f59e0b",
+                    "retriever": "#10b981",
+                    "parser": "#06b6d4"
+                }
+                
+                st.markdown('<div style="background: #18181b; border: 1px solid #27272a; border-radius: 6px; padding: 1rem;">', unsafe_allow_html=True)
+                for rt, latency in sorted(latency_by_type.items(), key=lambda x: x[1], reverse=True):
+                    pct = (latency / max(total_duration, 1)) * 100
+                    color = type_colors.get(rt, "#71717a")
+                    st.markdown(f"""
+                    <div style="margin-bottom: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="color: #a1a1aa; font-size: 0.8rem;">{rt.title()}</span>
+                            <span style="color: #fafafa; font-size: 0.8rem;">{latency:.0f}ms</span>
+                        </div>
+                        <div style="background: #27272a; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: {color}; height: 100%; width: {min(pct, 100):.0f}%;"></div>
+                        </div>
                     </div>
-                    <div style="background: #27272a; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: #f59e0b; height: 100%; width: {min(search_latency/max(total_duration,1)*100, 100):.0f}%;"></div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <span style="color: #a1a1aa; font-size: 0.8rem;">LLM Inference</span>
-                        <span style="color: #fafafa; font-size: 0.8rem;">{llm_latency:.0f}ms</span>
-                    </div>
-                    <div style="background: #27272a; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: #8b5cf6; height: 100%; width: {min(llm_latency/max(total_duration,1)*100, 100):.0f}%;"></div>
-                    </div>
-                </div>
-                <div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <span style="color: #a1a1aa; font-size: 0.8rem;">Total</span>
-                        <span style="color: #fafafa; font-size: 0.8rem;">{total_duration:.0f}ms</span>
-                    </div>
-                    <div style="background: #27272a; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
-            st.markdown("**Run Statistics**")
+            st.markdown("**Latency Percentiles**")
             
-            st.markdown(f"""
-            <div style="background: #18181b; border: 1px solid #27272a; border-radius: 6px; padding: 1rem;">
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #27272a;">
-                    <span style="color: #71717a; font-size: 0.8rem;">Total Events</span>
-                    <span style="color: #fafafa; font-size: 0.8rem; font-weight: 500;">{summary.get('total_events', 0)}</span>
+            latencies = [r.get("latency_ms") or 0 for r in runs if r.get("latency_ms")]
+            if latencies:
+                sorted_lat = sorted(latencies)
+                p50 = sorted_lat[len(sorted_lat) // 2]
+                p90 = sorted_lat[int(len(sorted_lat) * 0.9)]
+                p99 = sorted_lat[int(len(sorted_lat) * 0.99)]
+                
+                st.markdown(f"""
+                <div style="background: #18181b; border: 1px solid #27272a; border-radius: 6px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #27272a;">
+                        <span style="color: #71717a;">P50</span>
+                        <span style="color: #fafafa; font-weight: 500;">{p50:.0f}ms</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #27272a;">
+                        <span style="color: #71717a;">P90</span>
+                        <span style="color: #fafafa; font-weight: 500;">{p90:.0f}ms</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #27272a;">
+                        <span style="color: #71717a;">P99</span>
+                        <span style="color: #fafafa; font-weight: 500;">{p99:.0f}ms</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                        <span style="color: #71717a;">Avg</span>
+                        <span style="color: #fafafa; font-weight: 500;">{sum(latencies)/len(latencies):.0f}ms</span>
+                    </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #27272a;">
-                    <span style="color: #71717a; font-size: 0.8rem;">Search Calls</span>
-                    <span style="color: #fafafa; font-size: 0.8rem; font-weight: 500;">{summary.get('search_count', 0)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #27272a;">
-                    <span style="color: #71717a; font-size: 0.8rem;">Score Calculations</span>
-                    <span style="color: #fafafa; font-size: 0.8rem; font-weight: 500;">{summary.get('score_count', 0)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
-                    <span style="color: #71717a; font-size: 0.8rem;">LLM Calls</span>
-                    <span style="color: #fafafa; font-size: 0.8rem; font-weight: 500;">{summary.get('llm_calls', 0)}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
         
         st.markdown("---")
         
-        # RAG Configuration
+        # Token usage
+        st.markdown('<p class="section-header">Token Usage</p>', unsafe_allow_html=True)
+        
+        llm_runs = [r for r in runs if r.get("run_type") == "llm" and r.get("token_usage")]
+        if llm_runs:
+            total_prompt = sum(r["token_usage"].get("prompt_tokens", 0) for r in llm_runs)
+            total_completion = sum(r["token_usage"].get("completion_tokens", 0) for r in llm_runs)
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Prompt Tokens", f"{total_prompt:,}")
+            col2.metric("Completion Tokens", f"{total_completion:,}")
+            col3.metric("Total Tokens", f"{total_tokens:,}")
+        else:
+            st.info("No LLM token data available")
+        
+        st.markdown("---")
+        
+        # RAG Config
         st.markdown('<p class="section-header">RAG Configuration</p>', unsafe_allow_html=True)
         rag = result["rag_trace"]
         
@@ -1138,19 +1172,19 @@ elif page == "Observability":
         <div style="background: #18181b; border: 1px solid #27272a; border-radius: 6px; padding: 1rem;">
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
                 <div>
-                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.25rem;">Vector Store</div>
-                    <div style="color: #fafafa; font-size: 0.875rem;">{rag["vector_store"] or "Not Configured"}</div>
+                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase;">Vector Store</div>
+                    <div style="color: #fafafa; font-size: 0.875rem;">{rag["vector_store"] or "N/A"}</div>
                 </div>
                 <div>
-                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.25rem;">Embedding Model</div>
+                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase;">Embedding</div>
                     <div style="color: #fafafa; font-size: 0.875rem;">{rag["embedding_model"]}</div>
                 </div>
                 <div>
-                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.25rem;">Docs/Company</div>
+                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase;">Docs/Company</div>
                     <div style="color: #fafafa; font-size: 0.875rem;">{rag["documents_retrieved_per_company"]}</div>
                 </div>
                 <div>
-                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.25rem;">Threshold</div>
+                    <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase;">Threshold</div>
                     <div style="color: #fafafa; font-size: 0.875rem;">{rag["retrieval_confidence_threshold"]:.0%}</div>
                 </div>
             </div>
@@ -1163,55 +1197,42 @@ elif page == "Observability":
         workflow_info = controller.get_workflow_info()
         nodes = workflow_info.get("nodes", [])
         
+        node_info = {
+            "parse_bids": {"icon": "📥", "color": "#3b82f6", "desc": "Parse JSON bid data into objects"},
+            "check_cache": {"icon": "💾", "color": "#6366f1", "desc": "Check for cached evaluation"},
+            "gather_insights": {"icon": "🔍", "color": "#f59e0b", "desc": "Search Tavily + SerpAPI"},
+            "gather_historical": {"icon": "📚", "color": "#10b981", "desc": "Query ChromaDB RAG"},
+            "score_bids": {"icon": "📊", "color": "#8b5cf6", "desc": "Weighted multi-criteria scoring"},
+            "rank_bids": {"icon": "🏆", "color": "#ec4899", "desc": "Rank and select winner"},
+            "generate_explanation": {"icon": "🤖", "color": "#ef4444", "desc": "Groq LLM explanation"},
+            "build_result": {"icon": "📝", "color": "#06b6d4", "desc": "Build final result object"},
+            "persist_result": {"icon": "💿", "color": "#22c55e", "desc": "Save to SQLite + ChromaDB"}
+        }
+        
         st.markdown("""
         <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1.5rem;">
             <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; 
-                        letter-spacing: 0.05em; margin-bottom: 1rem;">Workflow Nodes</div>
+                        letter-spacing: 0.05em; margin-bottom: 1rem;">Workflow Pipeline</div>
         """, unsafe_allow_html=True)
         
-        # Draw the graph as a vertical flow
-        node_colors = {
-            "parse_bids": "#3b82f6",
-            "check_cache": "#6366f1",
-            "gather_insights": "#f59e0b",
-            "gather_historical": "#10b981",
-            "score_bids": "#8b5cf6",
-            "rank_bids": "#ec4899",
-            "generate_explanation": "#ef4444",
-            "build_result": "#06b6d4",
-            "persist_result": "#22c55e"
-        }
-        
-        node_icons = {
-            "parse_bids": "📥",
-            "check_cache": "💾",
-            "gather_insights": "🔍",
-            "gather_historical": "📚",
-            "score_bids": "📊",
-            "rank_bids": "🏆",
-            "generate_explanation": "🤖",
-            "build_result": "📝",
-            "persist_result": "💿"
-        }
-        
         for i, node in enumerate(nodes):
-            color = node_colors.get(node, "#71717a")
-            icon = node_icons.get(node, "•")
+            info = node_info.get(node, {"icon": "•", "color": "#71717a", "desc": ""})
             is_last = i == len(nodes) - 1
             
             st.markdown(f"""
-            <div style="display: flex; align-items: center; margin-bottom: {0 if is_last else '0.5rem'};">
-                <div style="width: 36px; height: 36px; background: {color}20; border: 2px solid {color}; 
+            <div style="display: flex; align-items: flex-start; margin-bottom: {0 if is_last else '0.5rem'};">
+                <div style="width: 40px; height: 40px; background: {info['color']}20; border: 2px solid {info['color']}; 
                             border-radius: 8px; display: flex; align-items: center; justify-content: center;
-                            font-size: 1rem; margin-right: 1rem;">
-                    {icon}
+                            font-size: 1.1rem; margin-right: 1rem; flex-shrink: 0;">
+                    {info['icon']}
                 </div>
-                <div>
-                    <div style="color: #fafafa; font-weight: 500; font-size: 0.875rem;">{node.replace('_', ' ').title()}</div>
-                    <div style="color: #71717a; font-size: 0.75rem;">Node {i + 1}</div>
+                <div style="flex-grow: 1;">
+                    <div style="color: #fafafa; font-weight: 500; font-size: 0.9rem;">{node.replace('_', ' ').title()}</div>
+                    <div style="color: #71717a; font-size: 0.75rem;">{info['desc']}</div>
                 </div>
+                <div style="color: #52525b; font-size: 0.7rem; font-family: monospace;">Node {i + 1}</div>
             </div>
-            {'<div style="width: 2px; height: 16px; background: #3f3f46; margin-left: 17px;"></div>' if not is_last else ''}
+            {'<div style="width: 2px; height: 12px; background: #3f3f46; margin-left: 19px;"></div>' if not is_last else ''}
             """, unsafe_allow_html=True)
         
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1221,43 +1242,42 @@ elif page == "Observability":
         # Graph state
         graph_state = controller.get_graph_state()
         if graph_state:
-            st.markdown('<p class="section-header">Last Execution State</p>', unsafe_allow_html=True)
+            st.markdown('<p class="section-header">Execution State</p>', unsafe_allow_html=True)
             
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Cache Hit", "Yes" if graph_state.get("cache_hit") else "No")
+            col2.metric("Bids Parsed", len(graph_state.get("parsed_bids", [])))
+            col3.metric("Companies", len(graph_state.get("insights", {})))
             
-            with col1:
-                st.metric("Cache Hit", "Yes" if graph_state.get("cache_hit") else "No")
-            
-            with col2:
-                bids_parsed = len(graph_state.get("parsed_bids", []))
-                st.metric("Bids Parsed", bids_parsed)
-            
-            with col3:
-                eval_id = graph_state.get("evaluation_id", "N/A")
-                st.markdown(f"**Evaluation ID:** `{eval_id[:12] if eval_id else 'N/A'}...`")
-            
-            # Show historical insights gathered
-            hist_insights = graph_state.get("historical_insights", {})
-            if hist_insights:
-                st.markdown("**Historical Insights Retrieved:**")
-                for company, insight in hist_insights.items():
-                    st.markdown(f"- **{company}**: Win Rate {insight.get('win_rate', 0):.0%}, "
-                                f"Avg Score {insight.get('avg_score', 0):.2f}")
+            eval_id = graph_state.get("evaluation_id")
+            col4.markdown(f"**Eval ID:**\n`{eval_id[:8] if eval_id else 'N/A'}...`")
     
     with raw_tab:
-        st.markdown('<p class="section-header">Raw Event Data</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">Raw Data Export</p>', unsafe_allow_html=True)
         
-        if events:
-            st.json(events)
-            
-            st.download_button(
-                "Export Events (JSON)",
-                json.dumps(events, indent=2),
-                "evaluation_events.json",
-                "application/json"
-            )
-        else:
-            st.info("No events recorded")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Runs (JSON)**")
+            if runs:
+                st.json(runs[:5])  # Show first 5
+                st.download_button(
+                    "Export All Runs",
+                    json.dumps(runs, indent=2, default=str),
+                    "evaluation_runs.json",
+                    "application/json"
+                )
+        
+        with col2:
+            st.markdown("**Trace Summary**")
+            if trace_data:
+                st.json(trace_data)
+                st.download_button(
+                    "Export Trace",
+                    json.dumps(trace_data, indent=2, default=str),
+                    "trace_data.json",
+                    "application/json"
+                )
 
 
 # Sidebar footer
