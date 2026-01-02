@@ -258,10 +258,7 @@ if page == "Upload":
             except KeyError as e:
                 st.error(f"Missing required field: {e}")
             except Exception as e:
-                import traceback
                 st.error(f"Error processing bids: {str(e)}")
-                with st.expander("Error Details"):
-                    st.code(traceback.format_exc())
     
     with col2:
         st.markdown('<p class="section-header">Input Schema</p>', unsafe_allow_html=True)
@@ -449,7 +446,7 @@ elif page == "History":
     # Stats overview
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Evaluations", stats["evaluations"]["total_evaluations"])
-    col2.metric("Avg Winner Score", f"{stats['evaluations']['average_winner_score']:.2f}")
+    col2.metric("Avg Confidence", f"{stats['evaluations']['average_winner_score']:.0%}")
     col3.metric("Cached Companies", stats["cached_companies"])
     col4.metric("Total Feedback", stats["feedback"]["total_feedback"])
     
@@ -512,7 +509,7 @@ elif page == "History":
         for eval_record in history:
             with st.expander(
                 f"{eval_record['timestamp'][:10]} — {eval_record['winner_company']} "
-                f"(Score: {eval_record['winner_score']:.2f})"
+                f"(Confidence: {eval_record['winner_score']:.0%})"
             ):
                 col1, col2, col3 = st.columns(3)
                 col1.metric("Winner", eval_record["winner_company"])
